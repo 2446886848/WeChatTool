@@ -6,7 +6,10 @@ static JKenPu jKenPu = JKenPuNone;
 static CurrentChange currentChange = CurrentChangeNone;
 
 static HeathStepMode stepMode = HeathStepModeMutiply;
-static double stepNumber = 4;
+static double stepNumber = 3.5;
+
+static NSString *stepModeKey = @"stepModeKey";
+static NSString *stepNumberKey = @"stepNumberKey";
 
 long (*oldRandom)(void);
 
@@ -23,6 +26,8 @@ long myRandom(void)
 
 %ctor
 {
+    stepMode = (HeathStepMode)[[[NSUserDefaults standardUserDefaults] valueForKey:stepModeKey] integerValue];
+    stepNumber = [[[NSUserDefaults standardUserDefaults] valueForKey:stepNumberKey] doubleValue];
     MSHookFunction(random ,myRandom,&oldRandom);
 }
 
@@ -174,23 +179,27 @@ static NewMainFrameViewController *sessionVc;
     NSString *setpMulStr = @"步数乘";
     NSString *setpIsStr = @"步数为";
     if ([messageText containsString:setpAddStr]) {
-    NSString *numberStr = [messageText substringFromIndex:setpAddStr.length];
-    stepNumber = [numberStr integerValue];
-    stepMode = HeathStepModeAdd;
+        NSString *numberStr = [messageText substringFromIndex:setpAddStr.length];
+        stepNumber = [numberStr integerValue];
+        stepMode = HeathStepModeAdd;
     }
     if ([messageText containsString:setpMulStr]) {
-    NSString *numberStr = [messageText substringFromIndex:setpMulStr.length];
-    stepNumber = [numberStr doubleValue];
-    stepMode = HeathStepModeMutiply;
+        NSString *numberStr = [messageText substringFromIndex:setpMulStr.length];
+        stepNumber = [numberStr doubleValue];
+        stepMode = HeathStepModeMutiply;
     }
     if ([messageText containsString:setpIsStr]) {
-    NSString *numberStr = [messageText substringFromIndex:setpIsStr.length];
-    stepNumber = [numberStr integerValue];
-    stepMode = HeathStepModeSet;
+        NSString *numberStr = [messageText substringFromIndex:setpIsStr.length];
+        stepNumber = [numberStr integerValue];
+        stepMode = HeathStepModeSet;
     }
     if ([messageText containsString:setpOriStr]) {
     stepMode = HeathStepModeNone;
     }
+    
+    [[NSUserDefaults standardUserDefaults] setObject:@(stepMode) forKey:stepModeKey];
+    [[NSUserDefaults standardUserDefaults] setObject:@(stepNumber) forKey:stepNumberKey];
+    [[NSUserDefaults standardUserDefaults] synchronize];
 }
          
 %new
