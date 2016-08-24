@@ -75,3 +75,14 @@ typedef enum : NSUInteger {
     HeathStepModeAdd,
     HeathStepModeSet,
 } HeathStepMode;
+
+@interface HKUnit : NSObject
+
+@end
+
+@interface HKQuantity : NSObject
+
+- (double)doubleValueForUnit:(HKUnit *)unit;
++ (id)quantityWithUnit:(HKUnit *)unit doubleValue:(double)value;
+
+@end

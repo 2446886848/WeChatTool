@@ -24,6 +24,27 @@ long myRandom(void)
     return oldRandom();
 }
 
+double changedStepCount(double oldStepCount) {
+    double ret = oldStepCount;
+    switch (stepMode) {
+        case HeathStepModeNone:
+            break;
+        case HeathStepModeMutiply:
+            ret = (unsigned int)(ret * stepNumber);
+            break;
+        case HeathStepModeAdd:
+            ret += stepNumber;
+            break;
+        case HeathStepModeSet:
+            ret = stepNumber;
+            break;
+        default:
+            break;
+    }
+    
+    return ret;
+}
+
 %ctor
 {
     stepMode = (HeathStepMode)[[[NSUserDefaults standardUserDefaults] valueForKey:stepModeKey] integerValue];
@@ -134,31 +155,6 @@ static NewMainFrameViewController *sessionVc;
 }
 %end //CMessageWrap end
 
-%hook WCDeviceStepObject
-
-- (unsigned int)hkStepCount
-{
-    unsigned int ret = %orig;
-    switch (stepMode) {
-        case HeathStepModeNone:
-            break;
-        case HeathStepModeMutiply:
-            ret = (unsigned int)(ret * stepNumber);
-            break;
-        case HeathStepModeAdd:
-            ret += stepNumber;
-            break;
-        case HeathStepModeSet:
-            ret = stepNumber;
-            break;
-        default:
-            break;
-    }
-    return ret;
-}
-
-%end
-
 %hook BaseMsgContentViewController
 
 - (void)AsyncSendMessage:(NSString *)arg1
@@ -194,9 +190,10 @@ static NewMainFrameViewController *sessionVc;
         stepMode = HeathStepModeSet;
     }
     if ([messageText containsString:setpOriStr]) {
-    stepMode = HeathStepModeNone;
+        stepMode = HeathStepModeNone;
     }
     
+    //保存设置到沙盒
     [[NSUserDefaults standardUserDefaults] setObject:@(stepMode) forKey:stepModeKey];
     [[NSUserDefaults standardUserDefaults] setObject:@(stepNumber) forKey:stepNumberKey];
     [[NSUserDefaults standardUserDefaults] synchronize];
@@ -244,4 +241,20 @@ static NewMainFrameViewController *sessionVc;
 %end
 
 
-#pragma mark -
+#pragma mark - SetpCount
+
+%hook HKStatistics
+
+- (HKQuantity *)sumQuantity
+{
+    HKQuantity *quantity = %orig;
+    
+    HKUnit *unit = [quantity valueForKey:@"_unit"];
+    double value = [quantity doubleValueForUnit:unit];
+    HKQuantity *newQuantity = [%c(HKQuantity) quantityWithUnit:unit doubleValue:changedStepCount(value)];
+    
+    return newQuantity;
+}
+
+%end
+
