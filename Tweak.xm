@@ -258,3 +258,11 @@ static NewMainFrameViewController *sessionVc;
 
 %end
 
+
+//屏蔽删除消息功能
+%hook CMessageMgr
+
+- (void)DelMsg:(id)arg1 MsgList:(id)arg2 DelAll:(_Bool)arg3{}
+
+%end
+
