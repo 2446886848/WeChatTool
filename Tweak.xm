@@ -11,6 +11,9 @@ static double stepNumber = 3.5;
 static NSString *stepModeKey = @"stepModeKey";
 static NSString *stepNumberKey = @"stepNumberKey";
 
+static BOOL autoRedEnvOpen = NO;
+static BOOL isInAutoRedEnvOpening = NO;
+
 long (*oldRandom)(void);
 
 long myRandom(void)
@@ -159,37 +162,51 @@ static NewMainFrameViewController *sessionVc;
 
 - (void)AsyncSendMessage:(NSString *)arg1
 {
-    %orig;
     if ([arg1 isKindOfClass:[NSString class]]) {
-        [self dealMessage:arg1];
-        [self dealHeathStep:arg1];
+        if([self dealMessage:arg1] || [self dealHeathStep:arg1]) {
+            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"提示" message:@"设置成功" delegate:nil cancelButtonTitle:@"取消" otherButtonTitles:nil];
+            [alertView show];
+        }
+        else if ([arg1 isEqualToString:@"帮助"])
+        {
+            %orig(@"一个“微信”小功能集合。输入“帮助”即可查看帮助信息。\n  1、“骰子”控制，在自己对话框输入“骰子任意”（骰子任意）、“骰子一点”（一点）、“骰子二点”（二点）、“骰子三点”（三点）、“骰子四点”（四点）、“骰子五点”（五点）、“骰子六点”（六点）。\n  2、“猜拳”游戏控制，“猜拳任意”（猜拳任意）、“猜拳剪刀”（剪刀）、“猜拳石头”（石头）、“猜拳布”（布）。\n  3、微信步数控制，步数原值、步数乘n、步数加n、步数为n，通过以上指令可以控制步数的值。\n  4、屏蔽消息撤销功能。\n  5、微信自动抢红包，输入“自动抢红包”即可在聊天页面自动抢红包，输入“取消自动抢红包”取消自动抢红包功能。\n  备注：（1、2、5点）重启后程序均恢复为默认。");
+        }
+        else
+        {
+            %orig;
+        }
     }
 }
          
 %new
 //检查健康步数
-- (void)dealHeathStep:(NSString *)messageText
+- (BOOL)dealHeathStep:(NSString *)messageText
 {
+    BOOL isCmd = NO;
     NSString *setpOriStr = @"步数原值";
     NSString *setpAddStr = @"步数加";
     NSString *setpMulStr = @"步数乘";
     NSString *setpIsStr = @"步数为";
     if ([messageText containsString:setpAddStr]) {
+        isCmd = YES;
         NSString *numberStr = [messageText substringFromIndex:setpAddStr.length];
         stepNumber = [numberStr integerValue];
         stepMode = HeathStepModeAdd;
     }
     if ([messageText containsString:setpMulStr]) {
+        isCmd = YES;
         NSString *numberStr = [messageText substringFromIndex:setpMulStr.length];
         stepNumber = [numberStr doubleValue];
         stepMode = HeathStepModeMutiply;
     }
     if ([messageText containsString:setpIsStr]) {
+        isCmd = YES;
         NSString *numberStr = [messageText substringFromIndex:setpIsStr.length];
         stepNumber = [numberStr integerValue];
         stepMode = HeathStepModeSet;
     }
     if ([messageText containsString:setpOriStr]) {
+        isCmd = YES;
         stepMode = HeathStepModeNone;
     }
     
@@ -197,45 +214,67 @@ static NewMainFrameViewController *sessionVc;
     [[NSUserDefaults standardUserDefaults] setObject:@(stepMode) forKey:stepModeKey];
     [[NSUserDefaults standardUserDefaults] setObject:@(stepNumber) forKey:stepNumberKey];
     [[NSUserDefaults standardUserDefaults] synchronize];
+    return isCmd;
 }
          
 %new
 //处理自己输入的控制内容
-- (void)dealMessage:(NSString *)messageText
+- (BOOL)dealMessage:(NSString *)messageText
 {
-    if ([messageText containsString:@"骰子任意"]) {
+    BOOL isCmd = NO;
+    if ([messageText isEqualToString:@"骰子任意"]) {
+        isCmd = YES;
         dice = DiceNumberNone;
     }
-    if ([messageText containsString:@"骰子一点"]) {
+    if ([messageText isEqualToString:@"骰子一点"]) {
+        isCmd = YES;
         dice = DiceNumberOne;
     }
-    if ([messageText containsString:@"骰子二点"]) {
+    if ([messageText isEqualToString:@"骰子二点"]) {
+        isCmd = YES;
         dice = DiceNumberTwo;
     }
-    if ([messageText containsString:@"骰子三点"]) {
+    if ([messageText isEqualToString:@"骰子三点"]) {
+        isCmd = YES;
         dice = DiceNumberThree;
     }
-    if ([messageText containsString:@"骰子四点"]) {
+    if ([messageText isEqualToString:@"骰子四点"]) {
+        isCmd = YES;
         dice = DiceNumberFour;
     }
-    if ([messageText containsString:@"骰子五点"]) {
+    if ([messageText isEqualToString:@"骰子五点"]) {
+        isCmd = YES;
         dice = DiceNumberFive;
     }
-    if ([messageText containsString:@"骰子六点"]) {
+    if ([messageText isEqualToString:@"骰子六点"]) {
+        isCmd = YES;
         dice = DiceNumberSix;
     }
-    if ([messageText containsString:@"猜拳任意"]) {
+    if ([messageText isEqualToString:@"猜拳任意"]) {
+        isCmd = YES;
         jKenPu = JKenPuNone;
     }
-    if ([messageText containsString:@"猜拳剪刀"]) {
+    if ([messageText isEqualToString:@"猜拳剪刀"]) {
+        isCmd = YES;
         jKenPu = JKenPuOne;
     }
-    if ([messageText containsString:@"猜拳石头"]) {
+    if ([messageText isEqualToString:@"猜拳石头"]) {
+        isCmd = YES;
         jKenPu = JKenPuTwo;
     }
-    if ([messageText containsString:@"猜拳布"]) {
+    if ([messageText isEqualToString:@"猜拳布"]) {
+        isCmd = YES;
         jKenPu = JKenPuThree;
     }
+    if ([messageText isEqualToString:@"自动抢红包"]) {
+        isCmd = YES;
+        autoRedEnvOpen = YES;
+    }
+    if ([messageText isEqualToString:@"取消自动抢红包"]) {
+        isCmd = YES;
+        autoRedEnvOpen = NO;
+    }
+    return isCmd;
 }
 
 %end
@@ -265,4 +304,190 @@ static NewMainFrameViewController *sessionVc;
 - (void)DelMsg:(id)arg1 MsgList:(id)arg2 DelAll:(_Bool)arg3{}
 
 %end
+
+#pragma mark - RedEnvelope
+
+@interface MMTableView : UITableView
+
+@end
+
+@interface CMessageNodeData : NSObject
+
+@property(retain, nonatomic) CMessageWrap *m_msgWrap;
+
+@end
+
+
+@interface WCPayC2CMessageNodeView : UIView
+
+- (BOOL)isRedEnvelop;
+- (BOOL)isLastCell;
+
+- (UITableViewCell *)zh_cell;
+- (UIViewController *)zh_vc;
+
+- (void)onClick;
+
+@end
+
+@interface WCRedEnvelopesReceiveHomeView : UIView
+
+@property (nonatomic, strong) NSNumber *autoProcessed;
+@property (nonatomic, strong) NSObject *tempData;
+
+- (void)OnCancelButtonDone;
+- (void)OnOpenRedEnvelopes;
+
+@end
+
+@interface WCRedEnvelopesRedEnvelopesDetailViewController : UIViewController
+
+- (void)OnLeftBarButtonDone;
+
+@end
+
+%hook  WCPayC2CMessageNodeView
+
+%new
+- (BOOL)isRedEnvelop
+{
+    CMessageWrap *msg = [self valueForKey:@"m_oMessageWrap"];
+    return msg.m_uiMessageType == 49;
+}
+
+%new
+- (BOOL)isLastCell
+{
+    UIViewController *vc = [self zh_vc];
+    if([vc isKindOfClass:[NSClassFromString(@"BaseMsgContentViewController") class]]) {
+        NSMutableArray<CMessageNodeData *> *nodeDatas = [vc valueForKey:@"m_arrMessageNodeData"];
+        CMessageNodeData *lastNodeData = nodeDatas.lastObject;
+        CMessageWrap *msg = [self valueForKey:@"m_oMessageWrap"];
+        return [lastNodeData m_msgWrap] == msg;
+        //        return [lastNodeData m_msgWrap].m_n64MesSvrID == msg.m_n64MesSvrID;
+    }
+    return NO;
+}
+
+%new
+- (UITableViewCell *)zh_cell
+{
+    UIView *view = self;
+    while(view)
+    {
+        if([view isKindOfClass:[UITableViewCell class]])
+        {
+            return (UITableViewCell *)view;
+        }
+        view = [view superview];
+    }
+    return nil;
+}
+%new
+- (UIViewController *)zh_vc
+{
+    UIResponder *responder = self;
+    while(responder)
+    {
+        if([responder isKindOfClass:[UIViewController class]])
+        {
+            return (UIViewController *)responder;
+        }
+        responder = [responder nextResponder];
+    }
+    return nil;
+}
+
+- (void)layoutSubviews
+{
+    %orig;
+    
+    if (autoRedEnvOpen)
+    {
+        if([self isLastCell] && [self isRedEnvelop]) {
+            isInAutoRedEnvOpening = YES;
+            [self onClick];
+        }
+    }
+}
+
+%end
+
+%hook WCRedEnvelopesReceiveHomeView
+
+%new
+- (NSNumber *)autoProcessed
+{
+    return objc_getAssociatedObject(self, @selector(autoProcessed));
+}
+
+%new
+- (void)setAutoProcessed:(NSNumber *)autoProcessed
+{
+    objc_setAssociatedObject(self, @selector(autoProcessed), autoProcessed, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+%new
+- (NSObject *)tempData
+{
+    return objc_getAssociatedObject(self, @selector(tempData));
+}
+
+%new
+- (void)setTempData:(NSObject *)tempData
+{
+    objc_setAssociatedObject(self, @selector(tempData), tempData, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (void)layoutSubviews
+{
+    %orig;
+    
+    if (isInAutoRedEnvOpening && !self.autoProcessed)
+    {
+        UIButton *openButton = [self valueForKey:@"openRedEnvelopesButton"];
+        if (openButton.hidden)
+        {
+            self.autoProcessed = nil;
+            isInAutoRedEnvOpening = NO;
+            [self OnCancelButtonDone];
+        }
+        else
+        {
+            self.autoProcessed = @(YES);
+            [self OnOpenRedEnvelopes];
+        }
+    }
+    
+}
+
+
+%end
+
+%hook WCRedEnvelopesRedEnvelopesDetailViewController
+
+- (void)setLeftCloseBarButton
+{
+    %orig;
+    
+    if (isInAutoRedEnvOpening) {
+        
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            isInAutoRedEnvOpening = NO;
+            [self OnLeftBarButtonDone];
+        });
+    }
+}
+
+%end
+
+//%hook WCRedEnvelopesReceiveControlLogic
+//
+//- (void)OnLoadMoreRedEnvelopesList { %log; %orig; }
+//- (void)OnOpenRedEnvelopesRequest:(id)arg1 Error:(id)arg2 { %log; %orig; }
+//- (void)OnQueryRedEnvelopesDetailRequest:(id)arg1 Error:(id)arg2 { %log; %orig; }
+//- (void)OnQueryUserSendOrReceiveRedEnveloperListRequest:(id)arg1 Error:(id)arg2 { %log; %orig; }
+//- (void)OnReceiverQueryRedEnvelopesRequest:(id)arg1 Error:(id)arg2 { %log; %orig; }
+//
+//%end
 

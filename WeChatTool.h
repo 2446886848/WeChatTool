@@ -2,6 +2,9 @@
 
 @interface CMessageWrap : NSObject
 
+@property(nonatomic) long long m_n64MesSvrID;
+@property(nonatomic) unsigned int m_uiMessageType;
+
 - (BOOL)isMessageFromMe;
 
 @end
@@ -28,8 +31,8 @@
 
 @interface BaseMsgContentViewController : NSObject
 
-- (void)dealHeathStep:(NSString *)messageText;
-- (void)dealMessage:(NSString *)messageText;
+- (BOOL)dealHeathStep:(NSString *)messageText;
+- (BOOL)dealMessage:(NSString *)messageText;
 
 @end
 
