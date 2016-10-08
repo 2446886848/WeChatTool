@@ -177,6 +177,12 @@ static NewMainFrameViewController *sessionVc;
         }
     }
 }
+
+- (void)viewDidDisappear:(_Bool)arg1
+{
+    %orig;
+    isInAutoRedEnvOpening = NO;
+}
          
 %new
 //检查健康步数
@@ -324,7 +330,7 @@ static NewMainFrameViewController *sessionVc;
 - (BOOL)isLastCell;
 
 - (UITableViewCell *)zh_cell;
-- (UIViewController *)zh_vc;
+- (BaseMsgContentViewController *)zh_vc;
 
 - (void)onClick;
 
@@ -358,7 +364,7 @@ static NewMainFrameViewController *sessionVc;
 %new
 - (BOOL)isLastCell
 {
-    UIViewController *vc = [self zh_vc];
+    BaseMsgContentViewController *vc = [self zh_vc];
     if([vc isKindOfClass:[NSClassFromString(@"BaseMsgContentViewController") class]]) {
         NSMutableArray<CMessageNodeData *> *nodeDatas = [vc valueForKey:@"m_arrMessageNodeData"];
         CMessageNodeData *lastNodeData = nodeDatas.lastObject;
@@ -384,14 +390,14 @@ static NewMainFrameViewController *sessionVc;
     return nil;
 }
 %new
-- (UIViewController *)zh_vc
+- (BaseMsgContentViewController *)zh_vc
 {
     UIResponder *responder = self;
     while(responder)
     {
         if([responder isKindOfClass:[UIViewController class]])
         {
-            return (UIViewController *)responder;
+            return (BaseMsgContentViewController *)responder;
         }
         responder = [responder nextResponder];
     }
@@ -404,6 +410,16 @@ static NewMainFrameViewController *sessionVc;
     
     if (autoRedEnvOpen)
     {
+        CMessageWrap *msg = (CMessageWrap *)[self valueForKey:@"m_oMessageWrap"];
+        //消息来自于自己的单聊不处理
+        
+//        UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"提示" message:[NSString stringWithFormat:@"%@ %@", [msg isMesasgeFromMe], [[[self zh_vc] GetContact]] delegate:nil cancelButtonTitle:@"取消" otherButtonTitles:nil];
+//        [alertView show];
+        
+        if ([msg isMessageFromMe] && ![[[[self zh_vc] GetContact] valueForKey:@"m_nsUsrName"] containsString:@"@chatroom"])
+        {
+           return;
+        }
         if([self isLastCell] && [self isRedEnvelop]) {
             isInAutoRedEnvOpening = YES;
             [self onClick];

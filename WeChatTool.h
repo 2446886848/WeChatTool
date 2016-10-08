@@ -33,6 +33,7 @@
 
 - (BOOL)dealHeathStep:(NSString *)messageText;
 - (BOOL)dealMessage:(NSString *)messageText;
+- (id)GetContact;
 
 @end
 
