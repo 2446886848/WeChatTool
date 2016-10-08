@@ -326,6 +326,8 @@ static NewMainFrameViewController *sessionVc;
 
 @interface WCPayC2CMessageNodeView : UIView
 
+@property (nonatomic, strong) NSNumber *autoClicked;
+
 - (BOOL)isRedEnvelop;
 - (BOOL)isLastCell;
 
@@ -353,6 +355,18 @@ static NewMainFrameViewController *sessionVc;
 @end
 
 %hook  WCPayC2CMessageNodeView
+
+%new
+- (NSNumber *)autoClicked
+{
+    return objc_getAssociatedObject(self, @selector(autoClicked));
+}
+
+%new
+- (void)setAutoClicked:(NSNumber *)autoClicked
+{
+    objc_setAssociatedObject(self, @selector(autoClicked), autoClicked, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
 
 %new
 - (BOOL)isRedEnvelop
@@ -408,6 +422,10 @@ static NewMainFrameViewController *sessionVc;
 {
     %orig;
     
+    if (self.autoClicked)
+    {
+        return;
+    }
     if (autoRedEnvOpen)
     {
         CMessageWrap *msg = (CMessageWrap *)[self valueForKey:@"m_oMessageWrap"];
@@ -422,6 +440,7 @@ static NewMainFrameViewController *sessionVc;
         }
         if([self isLastCell] && [self isRedEnvelop]) {
             isInAutoRedEnvOpening = YES;
+            self.autoClicked = @(YES);
             [self onClick];
         }
     }
@@ -474,7 +493,6 @@ static NewMainFrameViewController *sessionVc;
             [self OnOpenRedEnvelopes];
         }
     }
-    
 }
 
 
