@@ -324,7 +324,7 @@ static NewMainFrameViewController *sessionVc;
 @end
 
 
-@interface WCPayC2CMessageNodeView : UIView
+@interface WCPayC2CMessageCellView : UIView
 
 @property (nonatomic, strong) NSNumber *autoClicked;
 
@@ -334,7 +334,8 @@ static NewMainFrameViewController *sessionVc;
 - (UITableViewCell *)zh_cell;
 - (BaseMsgContentViewController *)zh_vc;
 
-- (void)onClick;
+- (CMessageWrap *)msg;
+- (void)onTouchUpInside;
 
 @end
 
@@ -354,7 +355,7 @@ static NewMainFrameViewController *sessionVc;
 
 @end
 
-%hook  WCPayC2CMessageNodeView
+%hook  WCPayC2CMessageCellView
 
 %new
 - (NSNumber *)autoClicked
@@ -371,7 +372,7 @@ static NewMainFrameViewController *sessionVc;
 %new
 - (BOOL)isRedEnvelop
 {
-    CMessageWrap *msg = [self valueForKey:@"m_oMessageWrap"];
+    CMessageWrap *msg = [self msg];
     return msg.m_uiMessageType == 49;
 }
 
@@ -380,13 +381,18 @@ static NewMainFrameViewController *sessionVc;
 {
     BaseMsgContentViewController *vc = [self zh_vc];
     if([vc isKindOfClass:[NSClassFromString(@"BaseMsgContentViewController") class]]) {
-        NSMutableArray<CMessageNodeData *> *nodeDatas = [vc valueForKey:@"m_arrMessageNodeData"];
-        CMessageNodeData *lastNodeData = nodeDatas.lastObject;
-        CMessageWrap *msg = [self valueForKey:@"m_oMessageWrap"];
-        return [lastNodeData m_msgWrap] == msg;
-        //        return [lastNodeData m_msgWrap].m_n64MesSvrID == msg.m_n64MesSvrID;
+        NSMutableArray *nodeDatas = [vc valueForKey:@"m_arrMessageNodeData"];
+        CMessageWrap *lastMsg = [nodeDatas.lastObject valueForKey:@"messageWrap"];
+        CMessageWrap *msg = [self msg];
+        return [[lastMsg valueForKey:@"m_uiMesLocalID"] isEqual:[msg valueForKey:@"m_uiMesLocalID"]];
     }
     return NO;
+}
+
+%new
+- (CMessageWrap *)msg
+{
+    return (CMessageWrap *)[[self valueForKey:@"viewModel" ] valueForKey:@"messageWrap"];
 }
 
 %new
@@ -428,11 +434,8 @@ static NewMainFrameViewController *sessionVc;
     }
     if (autoRedEnvOpen)
     {
-        CMessageWrap *msg = (CMessageWrap *)[self valueForKey:@"m_oMessageWrap"];
+        CMessageWrap *msg = [self msg];
         //消息来自于自己的单聊不处理
-        
-//        UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"提示" message:[NSString stringWithFormat:@"%@ %@", [msg isMesasgeFromMe], [[[self zh_vc] GetContact]] delegate:nil cancelButtonTitle:@"取消" otherButtonTitles:nil];
-//        [alertView show];
         
         if ([msg isMessageFromMe] && ![[[[self zh_vc] GetContact] valueForKey:@"m_nsUsrName"] containsString:@"@chatroom"])
         {
@@ -441,7 +444,7 @@ static NewMainFrameViewController *sessionVc;
         if([self isLastCell] && [self isRedEnvelop]) {
             isInAutoRedEnvOpening = YES;
             self.autoClicked = @(YES);
-            [self onClick];
+            [self onTouchUpInside];
         }
     }
 }
