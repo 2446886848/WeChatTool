@@ -1,4 +1,4 @@
-THEOS_DEVICE_IP = 192.168.2.2
+THEOS_DEVICE_IP = 192.168.22.122
 TARGET = iphone:latest:7.0
 ARCHS = arm64
 include $(THEOS)/makefiles/common.mk

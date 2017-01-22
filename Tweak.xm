@@ -14,6 +14,8 @@ static NSString *stepNumberKey = @"stepNumberKey";
 static BOOL autoRedEnvOpen = NO;
 static BOOL isInAutoRedEnvOpening = NO;
 
+static NSString *kAutoOpenDelayTimeKey = @"kAutoOpenDelayTimeKey";
+
 long (*oldRandom)(void);
 
 long myRandom(void)
@@ -94,7 +96,7 @@ static NewMainFrameViewController *sessionVc;
 - (void)OnAddMsg:(NSString *)name MsgWrap:(CMessageWrap *)arg2
 {
     %orig;
-    [self checkRedEnvelopeWithName:name message:arg2];
+//    [self checkRedEnvelopeWithName:name message:arg2];
 }
 
 %new
@@ -169,7 +171,7 @@ static NewMainFrameViewController *sessionVc;
         }
         else if ([arg1 isEqualToString:@"帮助"])
         {
-            %orig(@"一个“微信”小功能集合。输入“帮助”即可查看帮助信息。\n  1、“骰子”控制，在自己对话框输入“骰子任意”（骰子任意）、“骰子一点”（一点）、“骰子二点”（二点）、“骰子三点”（三点）、“骰子四点”（四点）、“骰子五点”（五点）、“骰子六点”（六点）。\n  2、“猜拳”游戏控制，“猜拳任意”（猜拳任意）、“猜拳剪刀”（剪刀）、“猜拳石头”（石头）、“猜拳布”（布）。\n  3、微信步数控制，步数原值、步数乘n、步数加n、步数为n，通过以上指令可以控制步数的值。\n  4、屏蔽消息撤销功能。\n  5、微信自动抢红包，输入“自动抢红包”即可在聊天页面自动抢红包，输入“取消自动抢红包”取消自动抢红包功能。\n  备注：（1、2、5点）重启后程序均恢复为默认。");
+            %orig(@"一个“微信”小功能集合。输入“帮助”即可查看帮助信息。\n  1、“骰子”控制，在自己对话框输入“骰子任意”（骰子任意）、“骰子一点”（一点）、“骰子二点”（二点）、“骰子三点”（三点）、“骰子四点”（四点）、“骰子五点”（五点）、“骰子六点”（六点）。\n  2、“猜拳”游戏控制，“猜拳任意”（猜拳任意）、“猜拳剪刀”（剪刀）、“猜拳石头”（石头）、“猜拳布”（布）。\n  3、微信步数控制，步数原值、步数乘n、步数加n、步数为n，通过以上指令可以控制步数的值。\n  4、屏蔽消息撤销功能。\n  5、微信自动抢红包，输入“自动抢红包+随机时间”即可在聊天页面自动抢红包，输入“取消自动抢红包”取消自动抢红包功能。\n  备注：（1、2、5点）重启后程序均恢复为默认。");
         }
         else
         {
@@ -272,7 +274,12 @@ static NewMainFrameViewController *sessionVc;
         isCmd = YES;
         jKenPu = JKenPuThree;
     }
-    if ([messageText isEqualToString:@"自动抢红包"]) {
+    NSString *autoRecvStr = @"自动抢红包";
+    if ([messageText hasPrefix:autoRecvStr]) {
+        NSString *delayTime = [messageText substringFromIndex:autoRecvStr.length];
+        [[NSUserDefaults standardUserDefaults] setObject:@([delayTime floatValue]) forKey:kAutoOpenDelayTimeKey];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+        
         isCmd = YES;
         autoRedEnvOpen = YES;
     }
@@ -442,9 +449,14 @@ static NewMainFrameViewController *sessionVc;
            return;
         }
         if([self isLastCell] && [self isRedEnvelop]) {
-            isInAutoRedEnvOpening = YES;
-            self.autoClicked = @(YES);
-            [self onTouchUpInside];
+            CGFloat delay = [[[NSUserDefaults standardUserDefaults] objectForKey:kAutoOpenDelayTimeKey] floatValue];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                if (!isInAutoRedEnvOpening) {
+                    isInAutoRedEnvOpening = YES;
+                    self.autoClicked = @(YES);
+                    [self onTouchUpInside];
+                }
+            });
         }
     }
 }
