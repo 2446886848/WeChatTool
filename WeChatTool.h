@@ -53,11 +53,30 @@
 @interface NewMainFrameViewController : NSObject
 @end
 
+@interface WCPayC2CMessageViewModel : NSObject
+
++ (BOOL)canCreateMessageViewModelWithMessageWrap:(id)arg1;
+
+@end
+
+@interface CMessageMgr : NSObject
+
+- (BOOL)isChatStatusNotifyOpenForMsgWrap:(id)arg1;
+
+@end
+
 @interface BaseMsgContentViewController : NSObject
 
 - (BOOL)dealHeathStep:(NSString *)messageText;
 - (BOOL)dealMessage:(NSString *)messageText;
 - (id)GetContact;
+
+@end
+
+@interface CAppViewControllerManager : NSObject
+
++ (CAppViewControllerManager *)getAppViewControllerManager;
+- (void)OnShowPush:(CMessageWrap *)msg;
 
 @end
 

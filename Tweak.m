@@ -93,40 +93,32 @@ static NewMainFrameViewController *sessionVc;
 %end
 
 %hook MMNewSessionMgr
-- (void)OnAddMsg:(NSString *)name MsgWrap:(CMessageWrap *)arg2
+- (void)OnAddMsgListForSession:(NSDictionary<NSString *, CMessageWrap *> *)messageDict NotifyUsrName:(NSSet *)messageFormUsers
 {
     %orig;
-//    [self checkRedEnvelopeWithName:name message:arg2];
-}
-
-%new
-//检查红包
-- (void)checkRedEnvelopeWithName:(NSString *)name message:(CMessageWrap *)arg2
-{
-    MMSessionInfo *sessionInfo = [self GetSessionByUserName:name]; //MMSessionInfo *
-    
-    MainFrameCellData *cellData = [self cellDataForMessageInfo:sessionInfo];
-    
-    BOOL isHongBao = [[cellData valueForKey:@"m_textForMessageLabel"] containsString:@"[微信红包]"];
-    NSString *sessionName = [cellData valueForKey:@"m_textForNameLabel"];
-    if (isHongBao && [[arg2 description] containsString:@"<silence>1</silence>"]) {
-        [self showLocalNotification:[NSString stringWithFormat:@"“%@”%@", sessionName, @"发来了微信红包!"]];
+    for (NSString *name in [messageDict allKeys]) {
+        [self checkRedEnvelopeWithName:name message:messageDict[name]];
     }
 }
 
 %new
-- (MainFrameCellData *)cellDataForMessageInfo:(MMSessionInfo *)info
+//检查红包
+- (void)checkRedEnvelopeWithName:(NSString *)name message:(CMessageWrap *)msg
 {
-    MainFrameCellDataManager *cellDataManager = [[sessionVc valueForKey:@"m_mainFrameLogicController"] valueForKey:@"m_cellDataMgr"];
-    MainFrameCellData *cellData = [cellDataManager getCellData:info]; //MainFrameCellData
-    return cellData;
+    BOOL isHongBao = [%c(WCPayC2CMessageViewModel) canCreateMessageViewModelWithMessageWrap:msg];
+    CMessageMgr *msgMgr = [[%c(MMServiceCenter) defaultCenter] getService:[%c(CMessageMgr) class]];
+    BOOL isSessionNotice = [msgMgr isChatStatusNotifyOpenForMsgWrap:msg];
+    
+    if (isHongBao && !isSessionNotice) {
+        [self showLocalNotification:@"您收到一条红包消息!"];
+    }
 }
 
 %new
 - (void)showLocalNotification:(NSString *)alertBody
 {
     UILocalNotification*notification = [[UILocalNotification alloc]init];
-    NSDate * pushDate = [NSDate dateWithTimeIntervalSinceNow:0.1];
+    NSDate * pushDate = [NSDate dateWithTimeIntervalSinceNow:0];
     if (notification != nil) {
         notification.fireDate = pushDate;
         notification.timeZone = [NSTimeZone defaultTimeZone];
@@ -138,6 +130,15 @@ static NewMainFrameViewController *sessionVc;
         
     }
 }
+
+%new
+- (MainFrameCellData *)cellDataForMessageInfo:(MMSessionInfo *)info
+{
+    MainFrameCellDataManager *cellDataManager = [[sessionVc valueForKey:@"m_mainFrameLogicController"] valueForKey:@"m_cellDataMgr"];
+    MainFrameCellData *cellData = [cellDataManager getCellData:info]; //MainFrameCellData
+    return cellData;
+}
+
 %end // MMNewSessionMgr end
 
 %hook CMessageWrap
